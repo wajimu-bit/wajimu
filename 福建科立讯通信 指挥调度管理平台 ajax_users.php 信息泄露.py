@@ -20,7 +20,7 @@ def banner():
 
 def main():
     banner()
-    parser = argparse.ArgumentParser(description="福建科立讯通信 指挥调度管理平台 ajax_users.php SQL注入漏洞")
+    parser = argparse.ArgumentParser(description="福建科立讯通信 指挥调度管理平台 ajax_users.php 信息泄露")
     parser.add_argument('-u','--url',dest='url',type=str,help='link')
     parser.add_argument('-f','--file',dest='file',type=str,help='file')
     args=parser.parse_args()
